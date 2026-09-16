@@ -1,0 +1,129 @@
+Project ConectaFacilDB {
+  database_type: 'SQLite'
+  Note: '''
+    Banco de Dados do sistema ConectaFácil, que conecta candidatos a vagas de emprego com empresas e recrutadores.
+    O banco de dados é usado tanto pelo web quanto pelo mobile.
+  '''
+}
+
+/*
+    O usuário pode se cadastrar no sistema com email e senha (web e mobile) e,
+     depois completar seu perfil com informações adicionais.
+
+      CANDIDATE: Uso sempre pelo celular (implementação futura: também mexer pelo web);
+      ADMIN e RECRUITER: Uso sempre pelo web;
+
+    //A validação do CPF ou CNPJ deve ser realizada pelo backend, no momento do cadastro do usuário.
+     O backend deve validar o CPF ou CNPJ e, caso seja inválido, retornar um erro para o frontend.  
+
+     Fluxo do Sistema: Usuário se cadastra com email e senha; Se candidato pode ver as vagas disponíveis;
+                       Se recrutador pode criar vagas; Se administrador pode gerenciar usuários e vagas.
+                       O CANDIDATE pode se candidatar a vagas, mas não pode criar ou gerenciar vagas. 
+                       O RECRUITER pode criar e gerenciar vagas, mas não pode se candidatar a vagas.
+                       O ADMIN pode gerenciar usuários e vagas, mas não pode se candidatar a vagas nem criar vagas.
+                       Quando um CANDIDATE se candidata a uma vaga, o RECRUITER recebe uma notificação por e-mail 
+                       e pode visualizar o perfil do CANDIDATE e o CANDIDATE passa a ver o e-mail da empresa.
+        
+*/
+
+//Tabela com o cadastro dos usuários do sistema (candidatos, recrutadores e administradores).
+Table users {
+  id integer [primary key]
+  email text [not null, unique, note: "O email é usado como login do usuário."]
+  verified_email integer [not null, default: 0, note: "0 = não verificado, 1 = verificado"]
+  code_email_verification text [note: "Código de verificação enviado por email. Se o usuário for verificado, este campo será nulo."]
+  password text [not null, default: "Senha123!", note: "Senha criptografada. Não é possível recuperar a senha original."]
+  user_type text [not null, default: "CANDIDATE", note: "Ex: CANDIDATE, RECRUITER, ADMIN", checks: "user_type IN ('CANDIDATE', 'RECRUITER', 'ADMIN')"]
+  full_name text [note: "Nome completo do usuário."]
+  avatar_url text [note: "URL da imagem de avatar/foto do usuário."]
+  bio text [note: "Breve descrição do usuário."]
+  phone_number text [note: "Número de telefone do usuário. Padrão internacional: (11)99999-9999 ou (11)9999-9999"]
+  document_type text [default: "CPF", note: "Tipo de documento do usuário. Ex: CPF, CNPJ, Passaporte. CANDIDATE: sempre CPF, RECRUITER: CPF ou CNPJ", checks: "document_type IN ('CPF', 'CNPJ', 'Passaporte')"]
+  accessibility_active integer [not null, default: 0, note: "0 = não ativo, 1 = ativo"]
+  document_number text [not null, note: "Número do documento do usuário. CANDIDATE: sempre CPF, RECRUITER: CPF ou CNPJ"]
+  created_at text [not null, note: "ISO-8601 UTC. No schema.sql: DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ','now'))"]
+  updated_at text [not null, note: "ISO-8601 UTC. Atualizado pelo trigger trg_users_updated_at."]
+
+  indexes {
+    email [name: "idx_user_email"]
+    user_type [name: "idx_user_type"]
+    full_name [name: "idx_user_full_name"]
+    document_number [name: "idx_user_document_number"]
+  }
+
+  records (email, verified_email, password, user_type, full_name, bio, phone_number, document_type, accessibility_active) {
+     'admin@admin.com', 1, 'Senha123!', 'ADMIN', 'Administrador do Sistema', 'Administrador do sistema ConectaFácil.', '(11)99999-9999', 'CPF', 0
+  }
+}
+
+//Tabela de interesses do usuário a vagas disponíveis que o usuário deseja receber notificações.
+Table interests {
+  id integer [primary key]
+  user_id integer [not null, note: "ID do usuário que tem interesse na categoria de vaga."]
+  vacancy_id integer [not null, note: "ID da vaga que o usuário tem interesse."]
+  active_notification integer [not null, default: 1, note: "0 = não ativo, 1 = ativo. Se o usuário deseja receber notificações sobre esta vaga."]
+  created_at text [not null, note: "ISO-8601 UTC. No schema.sql: DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ','now'))"]
+  updated_at text [not null, note: "ISO-8601 UTC. Atualizado pelo trigger trg_interests_updated_at."]
+}
+
+//Tabela de vagas de emprego disponíveis no sistema. Somente o RECRUITER podem criar, atualizar e "deletar" vagas.
+// O CANDIDATE apenas visualiza as vagas.
+Table vacancies {
+  id integer [primary key]
+  user_id integer [not null, note: "ID do usuário que criou a vaga. Somente RECRUITER podem criar vagas."]
+  company_sector text [note: "Ex: Tecnologia, Saúde, Educação, Varejo, Indústria, Serviços, etc."]
+  job_title text [not null, note: "Ex: Desenvolvedor(a) Front-end, Analista de Marketing, Enfermeiro(a), Vendedor(a), etc."]
+  job_description text [note: "Descrição detalhada da vaga, incluindo responsabilidades, requisitos, etc."]
+  salary_value real [note: "Ex: R$ 3.000,00, R$ 5.000,00, R$ 7.500,00, etc."]
+  benefits_text text [note: "Ex: Vale transporte, Vale refeição, Plano de saúde, Seguro de vida, etc."]
+  created_at text [not null, note: "ISO-8601 UTC. No schema.sql: DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ','now'))"]
+  updated_at text [not null, note: "ISO-8601 UTC. Atualizado pelo trigger trg_vacancies_updated_at."]
+
+  indexes {
+    job_title [name: "idx_vacancy_job_title"]
+    company_sector [name: "idx_vacancy_company_sector"]
+    salary_value [name: "idx_vacancy_salary_value"]
+    created_at [name: "idx_vacancy_created_at"]
+    job_description [name: "idx_vacancy_job_description"]
+  }
+}
+
+/* Implementação futura: tabela de interações do usuário com as vagas, como interesse, salvar, etc. 
+Table interactions {
+  id integer [primary key]
+  user_id integer
+  vacancy_id integer
+  is_interested integer
+  is_saved integer
+  created_at text [not null, note: "ISO-8601 UTC. No schema.sql: DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ','now'))"]
+  updated_at text [not null, note: "ISO-8601 UTC. Atualizado pelo trigger trg_interactions_updated_at."]
+}
+
+
+Table communications {
+  id integer [primary key]
+  user_id integer
+  type text [note: 'message or notification']
+  sender_id integer
+  content_body text
+  status_label text [note: 'Ex: visto ha 23 min or 1 Notificação']
+  is_read integer
+  created_at text [not null, note: "ISO-8601 UTC. No schema.sql: DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ','now'))"]
+  updated_at text [not null, note: "ISO-8601 UTC. Atualizado pelo trigger trg_communications_updated_at."]
+}
+
+*/
+
+Ref: interests.user_id > users.id
+Ref: vacancies.user_id > users.id
+Ref: interests.vacancy_id > vacancies.id
+
+
+
+/* 
+   Habilitar o PRAGMA foreign_keys = ON e o RESTRICT para o CASCADE.
+   
+   A atualização de updated_at é feita por trigger no banco (ver schema.sql),
+   para acontecer automaticamente em qualquer alteração do registro.
+
+*/
