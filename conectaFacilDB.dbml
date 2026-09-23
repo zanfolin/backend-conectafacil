@@ -34,17 +34,18 @@ Table users {
   email text [not null, unique, note: "O email é usado como login do usuário."]
   verified_email integer [not null, default: 0, note: "0 = não verificado, 1 = verificado"]
   code_email_verification text [note: "Código de verificação enviado por email. Se o usuário for verificado, este campo será nulo."]
-  password text [not null, default: "Senha123!", note: "Senha criptografada. Não é possível recuperar a senha original."]
+  password_hash text [not null, note: "Hash criptografado da senha. A senha original não é armazenada nem pode ser recuperada."]
   user_type text [not null, default: "CANDIDATE", note: "Ex: CANDIDATE, RECRUITER, ADMIN", checks: "user_type IN ('CANDIDATE', 'RECRUITER', 'ADMIN')"]
-  full_name text [note: "Nome completo do usuário."]
+  full_name text [not null, note: "Nome completo do usuário."]
   avatar_url text [note: "URL da imagem de avatar/foto do usuário."]
-  bio text [note: "Breve descrição do usuário."]
-  phone_number text [note: "Número de telefone do usuário. Padrão internacional: (11)99999-9999 ou (11)9999-9999"]
-  document_type text [default: "CPF", note: "Tipo de documento do usuário. Ex: CPF, CNPJ, Passaporte. CANDIDATE: sempre CPF, RECRUITER: CPF ou CNPJ", checks: "document_type IN ('CPF', 'CNPJ', 'Passaporte')"]
-  accessibility_active integer [not null, default: 0, note: "0 = não ativo, 1 = ativo"]
-  document_number text [not null, note: "Número do documento do usuário. CANDIDATE: sempre CPF, RECRUITER: CPF ou CNPJ"]
+  phone text [note: "Número de telefone do usuário. Padrão internacional: (11)99999-9999 ou (11)9999-9999"]
+  document_type text [not null, note: "Tipo de documento do usuário. CANDIDATE: CPF; RECRUITER: CPF ou CNPJ.", checks: "document_type IN ('CPF', 'CNPJ')"]
+  document_number text [not null, unique, note: "Número do documento do usuário. CANDIDATE: sempre CPF; RECRUITER: CPF ou CNPJ."]
+  code_expires_at timestamp [note: "Data e hora limite para utilização do código de verificação enviado por email."]
+  active_notification integer [not null, default: 1, note: "0 = notificações desativadas, 1 = notificações ativas."]
   created_at text [not null, note: "ISO-8601 UTC. No schema.sql: DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ','now'))"]
   updated_at text [not null, note: "ISO-8601 UTC. Atualizado pelo trigger trg_users_updated_at."]
+  deleted_at timestamp [note: "Data e hora da exclusão lógica do usuário; nulo indica que o registro está ativo."]
 
   indexes {
     email [name: "idx_user_email"]
@@ -53,8 +54,8 @@ Table users {
     document_number [name: "idx_user_document_number"]
   }
 
-  records (email, verified_email, password, user_type, full_name, bio, phone_number, document_type, accessibility_active) {
-     'admin@admin.com', 1, 'Senha123!', 'ADMIN', 'Administrador do Sistema', 'Administrador do sistema ConectaFácil.', '(11)99999-9999', 'CPF', 0
+  records (email, verified_email, password_hash, user_type, full_name, phone, document_type, document_number, active_notification) {
+     'admin@admin.com', 1, '$2b$12$hash-ilustrativo', 'ADMIN', 'Administrador do Sistema', '(11)99999-9999', 'CPF', '11144477735', 1
   }
 }
 
@@ -63,9 +64,13 @@ Table interests {
   id integer [primary key]
   user_id integer [not null, note: "ID do usuário que tem interesse na categoria de vaga."]
   vacancy_id integer [not null, note: "ID da vaga que o usuário tem interesse."]
-  active_notification integer [not null, default: 1, note: "0 = não ativo, 1 = ativo. Se o usuário deseja receber notificações sobre esta vaga."]
+  status text [not null, default: "PENDING", note: "Estado da candidatura à vaga.", checks: "status IN ('PENDING', 'ACCEPTED', 'REJECTED')"]
   created_at text [not null, note: "ISO-8601 UTC. No schema.sql: DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ','now'))"]
   updated_at text [not null, note: "ISO-8601 UTC. Atualizado pelo trigger trg_interests_updated_at."]
+
+  indexes {
+    (user_id, vacancy_id) [unique, name: "interests_user_id_vacancy_id_unique", note: "Impede que o mesmo candidato se candidate mais de uma vez à mesma vaga."]
+  }
 }
 
 //Tabela de vagas de emprego disponíveis no sistema. Somente o RECRUITER podem criar, atualizar e "deletar" vagas.
@@ -73,26 +78,34 @@ Table interests {
 Table vacancies {
   id integer [primary key]
   user_id integer [not null, note: "ID do usuário que criou a vaga. Somente RECRUITER podem criar vagas."]
-  company_sector text [note: "Ex: Tecnologia, Saúde, Educação, Varejo, Indústria, Serviços, etc."]
   job_title text [not null, note: "Ex: Desenvolvedor(a) Front-end, Analista de Marketing, Enfermeiro(a), Vendedor(a), etc."]
-  job_description text [note: "Descrição detalhada da vaga, incluindo responsabilidades, requisitos, etc."]
-  salary_value real [note: "Ex: R$ 3.000,00, R$ 5.000,00, R$ 7.500,00, etc."]
-  benefits_text text [note: "Ex: Vale transporte, Vale refeição, Plano de saúde, Seguro de vida, etc."]
+  company_name text [not null, note: "Nome da empresa que oferece a vaga."]
+  company_sector text [note: "Setor de atuação da empresa. Ex: Tecnologia, Saúde, Educação, Varejo, Indústria, Serviços, etc."]
+  job_description text [not null, note: "Descrição detalhada da vaga, incluindo responsabilidades e informações gerais da oportunidade."]
+  requirements text [note: "Requisitos técnicos, comportamentais e de experiência para a vaga."]
+  benefits text [note: "Benefícios oferecidos pela empresa. Ex: Vale transporte, Vale refeição, Plano de saúde, Seguro de vida, etc."]
+  location text [note: "Localização da vaga ou indicação da região de trabalho."]
+  work_model text [not null, default: "ONSITE", note: "Modelo de trabalho da vaga.", checks: "work_model IN ('REMOTE', 'HYBRID', 'ONSITE')"]
+  contract_type text [not null, default: "CLT", note: "Tipo de contrato da vaga.", checks: "contract_type IN ('CLT', 'PJ', 'INTERNSHIP', 'FREELANCE')"]
+  salary_min real [note: "Valor mínimo da faixa salarial da vaga."]
+  salary_max real [note: "Valor máximo da faixa salarial da vaga."]
+  status text [not null, default: "OPEN", note: "Situação de publicação da vaga.", checks: "status IN ('OPEN', 'CLOSED')"]
   created_at text [not null, note: "ISO-8601 UTC. No schema.sql: DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ','now'))"]
   updated_at text [not null, note: "ISO-8601 UTC. Atualizado pelo trigger trg_vacancies_updated_at."]
+  deleted_at timestamp [note: "Data e hora da exclusão lógica da vaga; nulo indica que a vaga não foi excluída."]
 
   indexes {
     job_title [name: "idx_vacancy_job_title"]
     company_sector [name: "idx_vacancy_company_sector"]
-    salary_value [name: "idx_vacancy_salary_value"]
+    (salary_min, salary_max) [name: "idx_vacancy_salary_value", note: "Índice composto para consultas por faixa salarial."]
     created_at [name: "idx_vacancy_created_at"]
     job_description [name: "idx_vacancy_job_description"]
   }
 }
 
-Ref: interests.user_id > users.id
-Ref: vacancies.user_id > users.id
-Ref: interests.vacancy_id > vacancies.id
+Ref: interests.user_id > users.id [delete: restrict]
+Ref: vacancies.user_id > users.id [delete: restrict]
+Ref: interests.vacancy_id > vacancies.id [delete: restrict]
 
 /* 
    Habilitar o PRAGMA foreign_keys = ON e o RESTRICT para o CASCADE.
