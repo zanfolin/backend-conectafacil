@@ -1,0 +1,463 @@
+{
+  "__export_format": 4,
+  "__export_date": "2026-09-23T00:00:00.000Z",
+  "__export_source": "conectafacil-api",
+  "resources": [
+    {
+      "_id": "wrk_conectafacil_api",
+      "_type": "workspace",
+      "name": "ConectaFacil API",
+      "description": "Colecao de testes para a API ConectaFacil. Execute os logins e copie os tokens retornados para o ambiente antes das rotas protegidas.",
+      "scope": "collection"
+    },
+    {
+      "_id": "env_conectafacil_base",
+      "_type": "environment",
+      "parentId": "wrk_conectafacil_api",
+      "name": "Base Environment",
+      "data": {
+        "base_url": "http://localhost:3000",
+        "admin_email": "admin@admin.com",
+        "recruiter_email": "recruiter@test.com",
+        "candidate_email": "candidate@test.com",
+        "password": "Senha123!",
+        "admin_token": "COLE_O_TOKEN_DO_ADMIN_AQUI",
+        "recruiter_token": "COLE_O_TOKEN_DO_RECRUTADOR_AQUI",
+        "candidate_token": "COLE_O_TOKEN_DO_CANDIDATO_AQUI",
+        "vacancy_id": 2,
+        "candidate_id": 3,
+        "user_id": 3,
+        "verification_code": "000000",
+        "reset_code": "000000"
+      },
+      "dataPropertyOrder": null,
+      "color": null,
+      "isPrivate": false,
+      "metaSortKey": 1
+    },
+    {
+      "_id": "fld_health",
+      "_type": "request_group",
+      "parentId": "wrk_conectafacil_api",
+      "name": "Health",
+      "description": ""
+    },
+    {
+      "_id": "req_health",
+      "_type": "request",
+      "parentId": "fld_health",
+      "name": "Health check",
+      "method": "GET",
+      "url": "{{ _.base_url }}/health",
+      "headers": [],
+      "parameters": [],
+      "body": {},
+      "description": "Verifica se o servidor esta ativo. Retorno esperado: 200."
+    },
+    {
+      "_id": "fld_auth",
+      "_type": "request_group",
+      "parentId": "wrk_conectafacil_api",
+      "name": "Auth",
+      "description": ""
+    },
+    {
+      "_id": "req_register_candidate",
+      "_type": "request",
+      "parentId": "fld_auth",
+      "name": "Cadastrar candidato",
+      "method": "POST",
+      "url": "{{ _.base_url }}/api/auth/register",
+      "headers": [{ "name": "Content-Type", "value": "application/json" }],
+      "body": { "mimeType": "application/json", "text": "{\n  \"email\": \"novo.candidato@example.com\",\n  \"password\": \"Senha123!\",\n  \"full_name\": \"Novo Candidato\",\n  \"user_type\": \"CANDIDATE\",\n  \"document_type\": \"CPF\",\n  \"document_number\": \"52998224725\",\n  \"phone\": \"(11) 99999-0000\"\n}" },
+      "description": "Use e-mail e CPF ainda nao cadastrados."
+    },
+    {
+      "_id": "req_verify_email",
+      "_type": "request",
+      "parentId": "fld_auth",
+      "name": "Verificar e-mail",
+      "method": "POST",
+      "url": "{{ _.base_url }}/api/auth/verify-email",
+      "headers": [{ "name": "Content-Type", "value": "application/json" }],
+      "body": { "mimeType": "application/json", "text": "{\n  \"email\": \"novo.candidato@example.com\",\n  \"code\": \"{{ _.verification_code }}\"\n}" }
+    },
+    {
+      "_id": "req_resend_verification",
+      "_type": "request",
+      "parentId": "fld_auth",
+      "name": "Reenviar verificacao",
+      "method": "POST",
+      "url": "{{ _.base_url }}/api/auth/resend-verification",
+      "headers": [{ "name": "Content-Type", "value": "application/json" }],
+      "body": { "mimeType": "application/json", "text": "{\n  \"email\": \"novo.candidato@example.com\"\n}" }
+    },
+    {
+      "_id": "req_login_admin",
+      "_type": "request",
+      "parentId": "fld_auth",
+      "name": "Login admin",
+      "method": "POST",
+      "url": "{{ _.base_url }}/api/auth/login",
+      "headers": [{ "name": "Content-Type", "value": "application/json" }],
+      "body": { "mimeType": "application/json", "text": "{\n  \"email\": \"{{ _.admin_email }}\",\n  \"password\": \"{{ _.password }}\"\n}" },
+      "description": "Copie o campo token da resposta para admin_token no ambiente."
+    },
+    {
+      "_id": "req_login_recruiter",
+      "_type": "request",
+      "parentId": "fld_auth",
+      "name": "Login recrutador",
+      "method": "POST",
+      "url": "{{ _.base_url }}/api/auth/login",
+      "headers": [{ "name": "Content-Type", "value": "application/json" }],
+      "body": { "mimeType": "application/json", "text": "{\n  \"email\": \"{{ _.recruiter_email }}\",\n  \"password\": \"{{ _.password }}\"\n}" },
+      "description": "Copie o campo token da resposta para recruiter_token no ambiente."
+    },
+    {
+      "_id": "req_login_candidate",
+      "_type": "request",
+      "parentId": "fld_auth",
+      "name": "Login candidato",
+      "method": "POST",
+      "url": "{{ _.base_url }}/api/auth/login",
+      "headers": [{ "name": "Content-Type", "value": "application/json" }],
+      "body": { "mimeType": "application/json", "text": "{\n  \"email\": \"{{ _.candidate_email }}\",\n  \"password\": \"{{ _.password }}\"\n}" },
+      "description": "Copie o campo token da resposta para candidate_token no ambiente."
+    },
+    {
+      "_id": "req_forgot_password",
+      "_type": "request",
+      "parentId": "fld_auth",
+      "name": "Solicitar redefinicao de senha",
+      "method": "POST",
+      "url": "{{ _.base_url }}/api/auth/forgot-password",
+      "headers": [{ "name": "Content-Type", "value": "application/json" }],
+      "body": { "mimeType": "application/json", "text": "{\n  \"email\": \"{{ _.candidate_email }}\"\n}" }
+    },
+    {
+      "_id": "req_reset_password",
+      "_type": "request",
+      "parentId": "fld_auth",
+      "name": "Redefinir senha",
+      "method": "POST",
+      "url": "{{ _.base_url }}/api/auth/reset-password",
+      "headers": [{ "name": "Content-Type", "value": "application/json" }],
+      "body": { "mimeType": "application/json", "text": "{\n  \"email\": \"{{ _.candidate_email }}\",\n  \"code\": \"{{ _.reset_code }}\",\n  \"password\": \"Senha123!\"\n}" }
+    },
+    {
+      "_id": "req_auth_me",
+      "_type": "request",
+      "parentId": "fld_auth",
+      "name": "Usuario autenticado",
+      "method": "GET",
+      "url": "{{ _.base_url }}/api/auth/me",
+      "headers": [{ "name": "Authorization", "value": "Bearer {{ _.candidate_token }}" }],
+      "parameters": [],
+      "body": {}
+    },
+    {
+      "_id": "fld_user",
+      "_type": "request_group",
+      "parentId": "wrk_conectafacil_api",
+      "name": "Usuario",
+      "description": ""
+    },
+    {
+      "_id": "req_upload_avatar",
+      "_type": "request",
+      "parentId": "fld_user",
+      "name": "Enviar avatar",
+      "method": "POST",
+      "url": "{{ _.base_url }}/api/users/me/avatar",
+      "headers": [{ "name": "Authorization", "value": "Bearer {{ _.candidate_token }}" }],
+      "body": { "mimeType": "multipart/form-data", "params": [{ "name": "avatar", "type": "file", "fileName": "", "value": "" }] },
+      "description": "Selecione uma imagem de ate 2 MB no campo avatar."
+    },
+    {
+      "_id": "fld_candidates",
+      "_type": "request_group",
+      "parentId": "wrk_conectafacil_api",
+      "name": "Candidato",
+      "description": "Todas as rotas usam candidate_token."
+    },
+    {
+      "_id": "req_candidate_profile_get",
+      "_type": "request",
+      "parentId": "fld_candidates",
+      "name": "Obter perfil",
+      "method": "GET",
+      "url": "{{ _.base_url }}/api/candidates/profile",
+      "headers": [{ "name": "Authorization", "value": "Bearer {{ _.candidate_token }}" }],
+      "body": {}
+    },
+    {
+      "_id": "req_candidate_profile_update",
+      "_type": "request",
+      "parentId": "fld_candidates",
+      "name": "Atualizar perfil",
+      "method": "PUT",
+      "url": "{{ _.base_url }}/api/candidates/profile",
+      "headers": [{ "name": "Authorization", "value": "Bearer {{ _.candidate_token }}" }, { "name": "Content-Type", "value": "application/json" }],
+      "body": { "mimeType": "application/json", "text": "{\n  \"full_name\": \"Candidato Teste\",\n  \"phone\": \"(11) 98888-8888\",\n  \"active_notification\": true\n}" }
+    },
+    {
+      "_id": "req_candidate_vacancies",
+      "_type": "request",
+      "parentId": "fld_candidates",
+      "name": "Listar vagas",
+      "method": "GET",
+      "url": "{{ _.base_url }}/api/candidates/vacancies?work_model=REMOTE&page=1&limit=10",
+      "headers": [{ "name": "Authorization", "value": "Bearer {{ _.candidate_token }}" }],
+      "body": {}
+    },
+    {
+      "_id": "req_candidate_vacancy",
+      "_type": "request",
+      "parentId": "fld_candidates",
+      "name": "Obter vaga",
+      "method": "GET",
+      "url": "{{ _.base_url }}/api/candidates/vacancies/{{ _.vacancy_id }}",
+      "headers": [{ "name": "Authorization", "value": "Bearer {{ _.candidate_token }}" }],
+      "body": {}
+    },
+    {
+      "_id": "req_candidate_apply",
+      "_type": "request",
+      "parentId": "fld_candidates",
+      "name": "Candidatar-se a vaga",
+      "method": "POST",
+      "url": "{{ _.base_url }}/api/candidates/vacancies/{{ _.vacancy_id }}/apply",
+      "headers": [{ "name": "Authorization", "value": "Bearer {{ _.candidate_token }}" }, { "name": "Content-Type", "value": "application/json" }],
+      "body": { "mimeType": "application/json", "text": "{}" },
+      "description": "Use vacancy_id 2 no seed. A vaga 1 ja possui candidatura do candidato de teste."
+    },
+    {
+      "_id": "req_candidate_applications",
+      "_type": "request",
+      "parentId": "fld_candidates",
+      "name": "Listar candidaturas",
+      "method": "GET",
+      "url": "{{ _.base_url }}/api/candidates/applications",
+      "headers": [{ "name": "Authorization", "value": "Bearer {{ _.candidate_token }}" }],
+      "body": {}
+    },
+    {
+      "_id": "req_candidate_delete_application",
+      "_type": "request",
+      "parentId": "fld_candidates",
+      "name": "Cancelar candidatura",
+      "method": "DELETE",
+      "url": "{{ _.base_url }}/api/candidates/applications/{{ _.vacancy_id }}",
+      "headers": [{ "name": "Authorization", "value": "Bearer {{ _.candidate_token }}" }],
+      "body": {}
+    },
+    {
+      "_id": "req_candidate_notifications",
+      "_type": "request",
+      "parentId": "fld_candidates",
+      "name": "Alterar notificacoes",
+      "method": "PATCH",
+      "url": "{{ _.base_url }}/api/candidates/notifications",
+      "headers": [{ "name": "Authorization", "value": "Bearer {{ _.candidate_token }}" }, { "name": "Content-Type", "value": "application/json" }],
+      "body": { "mimeType": "application/json", "text": "{\n  \"active_notification\": true\n}" }
+    },
+    {
+      "_id": "fld_recruiters",
+      "_type": "request_group",
+      "parentId": "wrk_conectafacil_api",
+      "name": "Recrutador",
+      "description": "Todas as rotas usam recruiter_token."
+    },
+    {
+      "_id": "req_recruiter_profile_get",
+      "_type": "request",
+      "parentId": "fld_recruiters",
+      "name": "Obter perfil",
+      "method": "GET",
+      "url": "{{ _.base_url }}/api/recruiters/profile",
+      "headers": [{ "name": "Authorization", "value": "Bearer {{ _.recruiter_token }}" }],
+      "body": {}
+    },
+    {
+      "_id": "req_recruiter_profile_update",
+      "_type": "request",
+      "parentId": "fld_recruiters",
+      "name": "Atualizar perfil",
+      "method": "PUT",
+      "url": "{{ _.base_url }}/api/recruiters/profile",
+      "headers": [{ "name": "Authorization", "value": "Bearer {{ _.recruiter_token }}" }, { "name": "Content-Type", "value": "application/json" }],
+      "body": { "mimeType": "application/json", "text": "{\n  \"full_name\": \"Recrutador Teste\",\n  \"phone\": \"(11) 99999-9999\"\n}" }
+    },
+    {
+      "_id": "req_recruiter_vacancy_create",
+      "_type": "request",
+      "parentId": "fld_recruiters",
+      "name": "Criar vaga",
+      "method": "POST",
+      "url": "{{ _.base_url }}/api/recruiters/vacancies",
+      "headers": [{ "name": "Authorization", "value": "Bearer {{ _.recruiter_token }}" }, { "name": "Content-Type", "value": "application/json" }],
+      "body": { "mimeType": "application/json", "text": "{\n  \"job_title\": \"Desenvolvedor Backend\",\n  \"company_name\": \"TechCorp\",\n  \"company_sector\": \"Tecnologia\",\n  \"job_description\": \"Desenvolvimento de APIs REST em Node.js.\",\n  \"requirements\": \"Node.js, SQL e Git\",\n  \"benefits\": \"Plano de saude\",\n  \"location\": \"Sao Paulo - SP\",\n  \"work_model\": \"HYBRID\",\n  \"contract_type\": \"CLT\",\n  \"salary_min\": 7000,\n  \"salary_max\": 10000\n}" }
+    },
+    {
+      "_id": "req_recruiter_vacancies",
+      "_type": "request",
+      "parentId": "fld_recruiters",
+      "name": "Listar minhas vagas",
+      "method": "GET",
+      "url": "{{ _.base_url }}/api/recruiters/vacancies?page=1&limit=10",
+      "headers": [{ "name": "Authorization", "value": "Bearer {{ _.recruiter_token }}" }],
+      "body": {}
+    },
+    {
+      "_id": "req_recruiter_vacancy_get",
+      "_type": "request",
+      "parentId": "fld_recruiters",
+      "name": "Obter minha vaga",
+      "method": "GET",
+      "url": "{{ _.base_url }}/api/recruiters/vacancies/{{ _.vacancy_id }}",
+      "headers": [{ "name": "Authorization", "value": "Bearer {{ _.recruiter_token }}" }],
+      "body": {}
+    },
+    {
+      "_id": "req_recruiter_vacancy_update",
+      "_type": "request",
+      "parentId": "fld_recruiters",
+      "name": "Atualizar minha vaga",
+      "method": "PUT",
+      "url": "{{ _.base_url }}/api/recruiters/vacancies/{{ _.vacancy_id }}",
+      "headers": [{ "name": "Authorization", "value": "Bearer {{ _.recruiter_token }}" }, { "name": "Content-Type", "value": "application/json" }],
+      "body": { "mimeType": "application/json", "text": "{\n  \"benefits\": \"Vale refeicao, plano de saude e home office\",\n  \"status\": \"OPEN\"\n}" }
+    },
+    {
+      "_id": "req_recruiter_vacancy_delete",
+      "_type": "request",
+      "parentId": "fld_recruiters",
+      "name": "Excluir minha vaga",
+      "method": "DELETE",
+      "url": "{{ _.base_url }}/api/recruiters/vacancies/{{ _.vacancy_id }}",
+      "headers": [{ "name": "Authorization", "value": "Bearer {{ _.recruiter_token }}" }],
+      "body": {},
+      "description": "Use apenas em vaga criada para teste; nao execute para preservar os dados seed."
+    },
+    {
+      "_id": "req_recruiter_vacancy_candidates",
+      "_type": "request",
+      "parentId": "fld_recruiters",
+      "name": "Listar candidatos da vaga",
+      "method": "GET",
+      "url": "{{ _.base_url }}/api/recruiters/vacancies/{{ _.vacancy_id }}/candidates?page=1&limit=10",
+      "headers": [{ "name": "Authorization", "value": "Bearer {{ _.recruiter_token }}" }],
+      "body": {}
+    },
+    {
+      "_id": "req_recruiter_candidate_status",
+      "_type": "request",
+      "parentId": "fld_recruiters",
+      "name": "Atualizar status de candidato",
+      "method": "PATCH",
+      "url": "{{ _.base_url }}/api/recruiters/vacancies/{{ _.vacancy_id }}/candidates/{{ _.candidate_id }}/status",
+      "headers": [{ "name": "Authorization", "value": "Bearer {{ _.recruiter_token }}" }, { "name": "Content-Type", "value": "application/json" }],
+      "body": { "mimeType": "application/json", "text": "{\n  \"status\": \"ACCEPTED\"\n}" }
+    },
+    {
+      "_id": "req_recruiter_candidate_profile",
+      "_type": "request",
+      "parentId": "fld_recruiters",
+      "name": "Obter perfil de candidato",
+      "method": "GET",
+      "url": "{{ _.base_url }}/api/recruiters/candidates/{{ _.candidate_id }}",
+      "headers": [{ "name": "Authorization", "value": "Bearer {{ _.recruiter_token }}" }],
+      "body": {}
+    },
+    {
+      "_id": "fld_admin",
+      "_type": "request_group",
+      "parentId": "wrk_conectafacil_api",
+      "name": "Admin",
+      "description": "Todas as rotas usam admin_token."
+    },
+    {
+      "_id": "req_admin_users",
+      "_type": "request",
+      "parentId": "fld_admin",
+      "name": "Listar usuarios",
+      "method": "GET",
+      "url": "{{ _.base_url }}/api/admin/users?user_type=CANDIDATE&page=1&limit=10",
+      "headers": [{ "name": "Authorization", "value": "Bearer {{ _.admin_token }}" }],
+      "body": {}
+    },
+    {
+      "_id": "req_admin_user_get",
+      "_type": "request",
+      "parentId": "fld_admin",
+      "name": "Obter usuario",
+      "method": "GET",
+      "url": "{{ _.base_url }}/api/admin/users/{{ _.user_id }}",
+      "headers": [{ "name": "Authorization", "value": "Bearer {{ _.admin_token }}" }],
+      "body": {}
+    },
+    {
+      "_id": "req_admin_user_update",
+      "_type": "request",
+      "parentId": "fld_admin",
+      "name": "Atualizar usuario",
+      "method": "PUT",
+      "url": "{{ _.base_url }}/api/admin/users/{{ _.user_id }}",
+      "headers": [{ "name": "Authorization", "value": "Bearer {{ _.admin_token }}" }, { "name": "Content-Type", "value": "application/json" }],
+      "body": { "mimeType": "application/json", "text": "{\n  \"active_notification\": true,\n  \"verified_email\": true\n}" }
+    },
+    {
+      "_id": "req_admin_user_delete",
+      "_type": "request",
+      "parentId": "fld_admin",
+      "name": "Excluir usuario",
+      "method": "DELETE",
+      "url": "{{ _.base_url }}/api/admin/users/{{ _.user_id }}",
+      "headers": [{ "name": "Authorization", "value": "Bearer {{ _.admin_token }}" }],
+      "body": {},
+      "description": "Use somente um usuario criado para teste."
+    },
+    {
+      "_id": "req_admin_vacancies",
+      "_type": "request",
+      "parentId": "fld_admin",
+      "name": "Listar vagas",
+      "method": "GET",
+      "url": "{{ _.base_url }}/api/admin/vacancies?status=OPEN&page=1&limit=10",
+      "headers": [{ "name": "Authorization", "value": "Bearer {{ _.admin_token }}" }],
+      "body": {}
+    },
+    {
+      "_id": "req_admin_vacancy_get",
+      "_type": "request",
+      "parentId": "fld_admin",
+      "name": "Obter vaga",
+      "method": "GET",
+      "url": "{{ _.base_url }}/api/admin/vacancies/{{ _.vacancy_id }}",
+      "headers": [{ "name": "Authorization", "value": "Bearer {{ _.admin_token }}" }],
+      "body": {}
+    },
+    {
+      "_id": "req_admin_vacancy_update",
+      "_type": "request",
+      "parentId": "fld_admin",
+      "name": "Atualizar status da vaga",
+      "method": "PUT",
+      "url": "{{ _.base_url }}/api/admin/vacancies/{{ _.vacancy_id }}",
+      "headers": [{ "name": "Authorization", "value": "Bearer {{ _.admin_token }}" }, { "name": "Content-Type", "value": "application/json" }],
+      "body": { "mimeType": "application/json", "text": "{\n  \"status\": \"OPEN\"\n}" }
+    },
+    {
+      "_id": "req_admin_vacancy_delete",
+      "_type": "request",
+      "parentId": "fld_admin",
+      "name": "Excluir vaga",
+      "method": "DELETE",
+      "url": "{{ _.base_url }}/api/admin/vacancies/{{ _.vacancy_id }}",
+      "headers": [{ "name": "Authorization", "value": "Bearer {{ _.admin_token }}" }],
+      "body": {},
+      "description": "Use somente uma vaga criada para teste."
+    }
+  ]
+}
