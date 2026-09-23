@@ -6,7 +6,7 @@ Raiz do projeto: `c:\Users\Graziani Zanfolin\Documents\backend-conectafacil`
 
 ## Steps
 
-### Fase 1 — Fundação do projeto
+### Fase 1 — Fundação do projeto ✅ CONCLUÍDA
 1. `package.json` — "type": "module"; dependências: express 5.2.1, zod 4.6.5, knex 3.3.0, bcryptjs 3.0.3, jsonwebtoken 9.0.3, nodemailer 10.0.10, multer 2.4.0; scripts `dev`/`start` com `node --env-file-if-exists=.env --watch src/server.js`, scripts `migrate:*`/`seed` via knex CLI.
 2. `.env_example` (PORT, NODE_ENV, JWT_SECRET, JWT_EXPIRES_IN, DATABASE_PATH, SMTP_HOST/PORT/SECURE/USER/PASS/FROM, UPLOAD_DIR, MAX_AVATAR_MB) + `.gitignore` (.env, node_modules, *.db, data/, uploads/avatars/).
 3. `src/config/env.js` — schema zod validando process.env com defaults seguros.
@@ -14,31 +14,37 @@ Raiz do projeto: `c:\Users\Graziani Zanfolin\Documents\backend-conectafacil`
 5. `knexfile.js` (ESM, usa o dialeto customizado, dirs de migrations/seeds) + `src/config/database.js` (singleton knex, cria o diretório do banco com mkdirSync recursive). *depende de 3 e 4*
 6. `src/app.js` + `src/server.js` — Express 5 (erros de handlers async propagam automaticamente), static `/uploads`, mount de rotas, listen e graceful shutdown. *depende de 5*
 
-### Fase 2 — Banco de dados (conforme DBML) — *depende da Fase 1*
+### Fase 2 — Banco de dados (conforme DBML) ✅ CONCLUÍDA
 7. Migration `users`: colunas do DBML + `code_expires_at`; índices idx_user_email, idx_user_type, idx_user_full_name, idx_user_document_number; trigger `trg_users_updated_at`; `created_at` default `strftime('%Y-%m-%dT%H:%M:%SZ','now')`.
 8. Migration `vacancies`: colunas do DBML + `status` (OPEN/CLOSED) + `deleted_at`; índices idx_vacancy_job_title, idx_vacancy_company_sector, idx_vacancy_salary_value, idx_vacancy_created_at, idx_vacancy_job_description; trigger `trg_vacancies_updated_at`; FK user_id → users RESTRICT.
 9. Migration `interests`: colunas do DBML + `status` (text NOT NULL default 'PENDING', CHECK IN ('PENDING','ACCEPTED','REJECTED')) + UNIQUE(user_id, vacancy_id); trigger `trg_interests_updated_at`; FKs RESTRICT para users e vacancies. *depende de 7 e 8*
 10. Seeds: `01_admin.js` (admin@admin.com, Senha123! com hash bcrypt, verified_email=1, CPF placeholder válido — DBML omite document_number apesar de NOT NULL) + `02_dev_data.js` (recrutador CNPJ, candidato CPF, vagas de exemplo — dev).
 11. *(Opcional)* Atualizar `conectaFacilDB.dbml` para refletir os desvios aprovados (status em interests; status/deleted_at em vacancies; code_expires_at em users), mantendo a spec em sync com o schema real.
 
-### Fase 3 — Infraestrutura de API — *paralela à Fase 2; depende da Fase 1*
+### Fase 3 — Infraestrutura de API ✅ CONCLUÍDA
 12. `src/middlewares/auth.js` (verifica JWT → req.user {id, type}) + `src/middlewares/requireRole.js` (CANDIDATE/RECRUITER/ADMIN).
 13. `src/middlewares/validate.js` — wrapper zod (body/query/params → 400 com detalhes).
 14. `src/middlewares/errorHandler.js` — ZodError→400, SQLITE_CONSTRAINT_UNIQUE→409, FK RESTRICT→409, 401/403/404; shape JSON consistente.
 15. `src/middlewares/upload.js` — multer disk storage em uploads/avatars, filtro jpg/png/webp, limite MAX_AVATAR_MB (default 2MB).
 16. `src/utils/` — `cpfCnpj.js` (dígitos verificadores), `mailer.js` (transporter nodemailer; jsonTransport/log no console quando SMTP ausente), `jwt.js` (sign/verify, payload {sub, type}).
 
-### Fase 4 — Módulo auth — *depende das Fases 2 e 3*
+### Fase 4 — Módulo auth ✅ CONCLUÍDA
 17. `src/modules/auth/` — POST /api/auth/register (só CANDIDATE/RECRUITER; CANDIDATE exige CPF válido, RECRUITER CPF ou CNPJ; hash bcrypt; código 6 dígitos + code_expires_at; e-mail), POST /verify-email (verified_email=1, limpa código), POST /resend-verification, POST /login (bloqueia e-mail não verificado; retorna JWT), POST /forgot-password, POST /reset-password (valida código, troca hash), GET /me.
 
-### Fase 5 — Módulos por perfil — *depende da Fase 4; 19-21 em paralelo*
+### Fase 5 — Módulos por perfil ✅ CONCLUÍDA
 18. `src/modules/users/` — POST /api/users/me/avatar (multer; atualiza avatar_url; remove arquivo antigo; serve via /uploads/avatars).
 19. `src/modules/candidates/` — GET/PUT /api/candidates/profile; GET /api/candidates/vacancies (filtros job_title/company_sector/salary, exclui deletadas); GET /api/candidates/vacancies/:id; POST /api/candidates/vacancies/:id/apply (cria interest com status PENDING; e-mail ao recrutador; resposta inclui e-mail da empresa); GET /api/candidates/applications (lista com status de cada candidatura); DELETE /api/candidates/applications/:vacancyId; PATCH toggle active_notification.
 20. `src/modules/recruiters/` — GET/PUT /api/recruiters/profile; CRUD das próprias vagas (403 em vaga de outro; update dispara e-mails a interessados com active_notification=1; delete = soft delete status CLOSED + deleted_at); GET /api/recruiters/vacancies/:id/candidates (lista candidatos com status da candidatura); PATCH /api/recruiters/vacancies/:id/candidates/:userId/status (body {status: ACCEPTED|REJECTED}; 403 em vaga alheia; e-mail ao candidato com o resultado); GET /api/recruiters/candidates/:id (perfil do candidato).
 21. `src/modules/admin/` — GET/PUT/DELETE /api/admin/users (filtros; delete → 409 se FK RESTRICT bloquear); GET /api/admin/vacancies + gestão (status, soft delete).
 
-### Fase 6 — Verificação end-to-end — *depende de todas*
-22. Rodar migrate/seed/dev e executar o checklist da seção Verification.
+### Fase 6 — Verificação end-to-end 🔄 EM ANDAMENTO
+22. **PENDENTE**: Corrigir `knexfile.js` para carregar `.env` corretamente (top-level await não funciona em ESM comum; usar `import.meta.env` ou carregar dotenv antes do import dinâmico).
+23. **PENDENTE**: `npm run migrate:latest` → inspecionar schema com node:sqlite.
+24. **PENDENTE**: `npm run seed` → POST /api/auth/login com admin@admin.com / Senha123! retorna JWT.
+25. **PENDENTE**: `npm run dev` → servidor na PORT; e-mails "enviados" aparecem no console (jsonTransport sem SMTP).
+26. **PENDENTE**: Fluxo manual (REST Client/curl): registrar candidato (CPF válido) → código no console → verify-email → login → candidatar-se à vaga do recrutador (CNPJ) → recrutador recebe notificação → lista candidatos (com status PENDING) e vê perfil → recrutador aceita/rejeita via PATCH status → candidato recebe e-mail e consulta status em /api/candidates/applications → recrutador atualiza vaga → interessado com active_notification=1 recebe e-mail → admin tenta excluir usuário com vínculos → 409.
+27. **PENDENTE**: Testes negativos: e-mail duplicado 409; CPF/CNPJ inválido 400; login não verificado 403; candidato criando vaga 403; recrutador candidatando 403; recrutador alterando status em vaga alheia 403; status inválido no body 400; JWT inválido/expirado 401; avatar >2MB ou tipo errado 400; candidatura duplicada 409 (UNIQUE).
+28. **PENDENTE**: FKs: insert em interests com vacancy_id inexistente → erro de constraint (PRAGMA foreign_keys ON).
 
 ## Relevant files
 - `conectaFacilDB.dbml` — especificação-fonte: tabelas, índices, triggers, FKs RESTRICT, seed admin, regras de negócio.
