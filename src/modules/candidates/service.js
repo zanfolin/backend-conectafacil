@@ -58,8 +58,8 @@ export async function listVacancies(userId, filters) {
   } = filters;
 
   let query = knex('vacancies')
-    .whereNull('deleted_at')
-    .where({ status: 'OPEN' })
+    .whereNull('vacancies.deleted_at')
+    .where({ 'vacancies.status': 'OPEN' })
     .join('users', 'vacancies.user_id', 'users.id')
     .select(
       'vacancies.*',
@@ -148,9 +148,9 @@ export async function applyToVacancy(userId, vacancyId) {
 
   // Check if vacancy exists and is open
   const vacancy = await knex('vacancies')
-    .where({ id: vacancyId })
-    .whereNull('deleted_at')
-    .where({ status: 'OPEN' })
+    .where({ 'vacancies.id': vacancyId })
+    .whereNull('vacancies.deleted_at')
+    .where({ 'vacancies.status': 'OPEN' })
     .join('users', 'vacancies.user_id', 'users.id')
     .select('vacancies.*', 'users.email as recruiter_email', 'users.full_name as recruiter_name')
     .first();
@@ -207,7 +207,7 @@ export async function listApplications(userId) {
   const knex = getKnex();
 
   const applications = await knex('interests')
-    .where({ user_id: userId })
+    .where({ 'interests.user_id': userId })
     .join('vacancies', 'interests.vacancy_id', 'vacancies.id')
     .join('users as recruiters', 'vacancies.user_id', 'recruiters.id')
     .whereNull('vacancies.deleted_at')

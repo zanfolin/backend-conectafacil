@@ -11,7 +11,7 @@ export function createApp() {
   app.use(express.urlencoded({ extended: true }));
 
   // Static files for uploads
-  app.use('/uploads', express.static(env.UPLOAD_DIR.replace('./uploads', 'uploads')));
+  app.use('/uploads', express.static(env.UPLOAD_DIR));
 
   // Health check
   app.get('/health', (req, res) => {

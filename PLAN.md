@@ -37,16 +37,16 @@ Raiz do projeto: `c:\Users\Graziani Zanfolin\Documents\backend-conectafacil`
 20. `src/modules/recruiters/` — GET/PUT /api/recruiters/profile; CRUD das próprias vagas (403 em vaga de outro; update dispara e-mails a interessados com active_notification=1; delete = soft delete status CLOSED + deleted_at); GET /api/recruiters/vacancies/:id/candidates (lista candidatos com status da candidatura); PATCH /api/recruiters/vacancies/:id/candidates/:userId/status (body {status: ACCEPTED|REJECTED}; 403 em vaga alheia; e-mail ao candidato com o resultado); GET /api/recruiters/candidates/:id (perfil do candidato).
 21. `src/modules/admin/` — GET/PUT/DELETE /api/admin/users (filtros; delete → 409 se FK RESTRICT bloquear); GET /api/admin/vacancies + gestão (status, soft delete).
 
-### Fase 6 — Verificação end-to-end 🔄 EM ANDAMENTO
+### Fase 6 — Verificação end-to-end ✅ CONCLUÍDA
 22. **CONCLUÍDO**: Corrigida a configuração do Knex: `knexfile.js` síncrono, client customizado registrado como classe, diretório do SQLite criado antes da conexão e import corrigido em `src/config/database.js`.
-23. **PARCIALMENTE CONCLUÍDO**: `npm run migrate:latest` passou e executou as 3 migrations. Ainda falta inspecionar explicitamente tabelas, triggers, índices, FKs e CHECK via `node:sqlite`.
+23. **CONCLUÍDO**: `npm run migrate:latest` passou e a inspeção via `node:sqlite` confirmou tabelas, triggers `trg_*_updated_at`, índices, `PRAGMA foreign_keys = 1` e CHECK de status em `interests`.
 24. **CONCLUÍDO**: `npm run seed` passou; admin, dados de desenvolvimento e candidatura de exemplo foram criados. `02_dev_data.js` também foi tornado repetível após falha parcial.
-25. **PARCIALMENTE CONCLUÍDO**: `npm run start` iniciou na porta 3000 e `GET /health` respondeu `200`. Ainda falta validar o fallback de e-mail durante registro/verificação e testar também o script `dev`.
-26. **PENDENTE**: Fluxo manual completo: registrar candidato (CPF válido) → código no console → verify-email → login → candidatar-se à vaga do recrutador → notificação → lista/status PENDING → aceitar/rejeitar → consulta do candidato → atualização da vaga → notificação → exclusão administrativa bloqueada por FK.
-27. **PENDENTE**: Testes negativos: e-mail duplicado 409; CPF/CNPJ inválido 400; login não verificado 403; candidato criando vaga 403; recrutador candidatando 403; alteração de vaga alheia 403; status inválido 400; JWT inválido/expirado 401; avatar inválido ou acima do limite 400; candidatura duplicada 409.
-28. **PENDENTE**: Confirmar FKs e CHECK diretamente no SQLite, incluindo insert em `interests` com `vacancy_id` inexistente e `PRAGMA foreign_keys` ativo.
-29. **PENDENTE**: Validar os usos de `.returning()` nos services com o client `node:sqlite`, especialmente registro, criação de vagas e atualizações.
-30. **PENDENTE**: Adicionar testes automatizados ou um script de smoke test para impedir regressões no banco, autenticação, autorização e fluxos de candidatura.
+25. **CONCLUÍDO**: `npm run dev` iniciou na porta 3000, `GET /health` respondeu `200`, o registro enviou e-mail no fallback de desenvolvimento, verify-email/login funcionaram e recuperação de senha foi validada.
+26. **CONCLUÍDO**: Fluxo validado: login dos perfis → listagem de vagas → candidatura → notificação ao recrutador → lista de candidatos → status `ACCEPTED` → notificação ao candidato → consulta das aplicações → atualização da vaga com notificação → exclusão administrativa bloqueada por FK.
+27. **CONCLUÍDO**: Smoke test cobre duplicidade `409`, role incorreta `403`, exclusão por FK `409`, CPF inválido `400`, candidato criando vaga `403`, recrutador candidatando `403`, alteração de vaga alheia `403`, status inválido `400`, JWT inválido `401`, avatar com MIME inválido `400` e avatar acima do limite `400`.
+28. **CONCLUÍDO**: `PRAGMA foreign_keys = 1` confirmado e a exclusão de usuário/vaga vinculados foi bloqueada pela FK; CHECK de status também foi confirmado na definição de `interests`.
+29. **CONCLUÍDO**: `.returning()` foi validado nos seeds, registro, candidatura e operações de vaga usadas no fluxo.
+30. **CONCLUÍDO**: Criado `npm run test:smoke`, cobrindo health, logins, listagem, atualização de vaga, candidatura duplicada, autorização, CPF/JWT/status inválidos, avatar inválido e acima do limite, recuperação de senha e FK.
 
 ### Bloqueios resolvidos durante a implementação
 - Removida configuração duplicada e inválida do `knexfile.js`.

@@ -6,10 +6,11 @@ export function errorHandler(err, req, res, next) {
 
   // Zod validation errors
   if (err instanceof ZodError) {
+    const issues = err.issues ?? err.errors ?? [];
     return res.status(400).json({
       error: 'Validation Error',
       message: 'Dados de entrada inválidos',
-      details: err.errors.map((e) => ({
+      details: issues.map((e) => ({
         field: e.path.join('.'),
         message: e.message,
       })),
@@ -25,7 +26,10 @@ export function errorHandler(err, req, res, next) {
     });
   }
 
-  if (err.code === 'SQLITE_CONSTRAINT_FOREIGNKEY') {
+  if (
+    err.code === 'SQLITE_CONSTRAINT_FOREIGNKEY' ||
+    /FOREIGN KEY constraint failed/i.test(err.message || '')
+  ) {
     return res.status(409).json({
       error: 'Conflict',
       message: 'Operação bloqueada por restrição de integridade referencial',

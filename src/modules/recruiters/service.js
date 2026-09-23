@@ -1,6 +1,28 @@
 import { getKnex } from '../../config/database.js';
 import { sendApplicationStatusEmail, sendVacancyUpdateEmail } from '../../utils/mailer.js';
 
+async function getOwnedVacancy(userId, vacancyId) {
+  const knex = getKnex();
+  const vacancy = await knex('vacancies')
+    .where({ id: vacancyId })
+    .whereNull('deleted_at')
+    .first();
+
+  if (!vacancy) {
+    const err = new Error('Vaga não encontrada');
+    err.statusCode = 404;
+    throw err;
+  }
+
+  if (vacancy.user_id !== userId) {
+    const err = new Error('Você não tem permissão para acessar esta vaga');
+    err.statusCode = 403;
+    throw err;
+  }
+
+  return vacancy;
+}
+
 export async function getProfile(userId) {
   const knex = getKnex();
 
@@ -98,18 +120,7 @@ export async function listMyVacancies(userId, filters) {
 }
 
 export async function getMyVacancy(userId, vacancyId) {
-  const knex = getKnex();
-
-  const vacancy = await knex('vacancies')
-    .where({ id: vacancyId, user_id: userId })
-    .whereNull('deleted_at')
-    .first();
-
-  if (!vacancy) {
-    const err = new Error('Vaga não encontrada');
-    err.statusCode = 404;
-    throw err;
-  }
+  const vacancy = await getOwnedVacancy(userId, vacancyId);
 
   return { vacancy };
 }
@@ -117,17 +128,7 @@ export async function getMyVacancy(userId, vacancyId) {
 export async function updateVacancy(userId, vacancyId, data) {
   const knex = getKnex();
 
-  // Check ownership
-  const vacancy = await knex('vacancies')
-    .where({ id: vacancyId, user_id: userId })
-    .whereNull('deleted_at')
-    .first();
-
-  if (!vacancy) {
-    const err = new Error('Vaga não encontrada');
-    err.statusCode = 404;
-    throw err;
-  }
+  const vacancy = await getOwnedVacancy(userId, vacancyId);
 
   const allowedFields = [
     'job_title', 'company_name', 'company_sector', 'job_description',
@@ -152,18 +153,20 @@ export async function updateVacancy(userId, vacancyId, data) {
     .where({ id: vacancyId })
     .update(updateData);
 
-  // If vacancy was updated (not just status), notify interested candidates with active_notification
+  // Notify every interested candidate who enabled vacancy notifications.
   const updatedFields = Object.keys(updateData).filter(f => f !== 'updated_at' && f !== 'status');
   if (updatedFields.length > 0) {
     const interestedCandidates = await knex('interests')
-      .where({ vacancy_id: vacancyId, status: 'PENDING' })
+      .where({ vacancy_id: vacancyId })
       .join('users', 'interests.user_id', 'users.id')
       .where('users.active_notification', true)
       .whereNull('users.deleted_at')
       .select('users.email', 'users.full_name');
 
+    const updatedVacancy = await knex('vacancies').where({ id: vacancyId }).first('job_title');
+
     for (const candidate of interestedCandidates) {
-      await sendVacancyUpdateEmail(candidate.email, vacancy.job_title);
+      await sendVacancyUpdateEmail(candidate.email, updatedVacancy.job_title);
     }
   }
 
@@ -173,17 +176,7 @@ export async function updateVacancy(userId, vacancyId, data) {
 export async function deleteVacancy(userId, vacancyId) {
   const knex = getKnex();
 
-  // Check ownership
-  const vacancy = await knex('vacancies')
-    .where({ id: vacancyId, user_id: userId })
-    .whereNull('deleted_at')
-    .first();
-
-  if (!vacancy) {
-    const err = new Error('Vaga não encontrada');
-    err.statusCode = 404;
-    throw err;
-  }
+  await getOwnedVacancy(userId, vacancyId);
 
   // Soft delete: set status to CLOSED and deleted_at
   await knex('vacancies')
@@ -202,17 +195,7 @@ export async function listCandidatesForVacancy(userId, vacancyId, filters) {
 
   const { page = 1, limit = 10 } = filters;
 
-  // Check ownership
-  const vacancy = await knex('vacancies')
-    .where({ id: vacancyId, user_id: userId })
-    .whereNull('deleted_at')
-    .first();
-
-  if (!vacancy) {
-    const err = new Error('Vaga não encontrada');
-    err.statusCode = 404;
-    throw err;
-  }
+  await getOwnedVacancy(userId, vacancyId);
 
   let query = knex('interests')
     .where({ vacancy_id: vacancyId })
@@ -255,17 +238,7 @@ export async function listCandidatesForVacancy(userId, vacancyId, filters) {
 export async function updateCandidateStatus(userId, vacancyId, candidateId, status) {
   const knex = getKnex();
 
-  // Check ownership
-  const vacancy = await knex('vacancies')
-    .where({ id: vacancyId, user_id: userId })
-    .whereNull('deleted_at')
-    .first();
-
-  if (!vacancy) {
-    const err = new Error('Vaga não encontrada');
-    err.statusCode = 404;
-    throw err;
-  }
+  const vacancy = await getOwnedVacancy(userId, vacancyId);
 
   // Check if candidate applied
   const interest = await knex('interests')

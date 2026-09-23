@@ -13,10 +13,11 @@ export function validate(schema) {
       next();
     } catch (err) {
       if (err instanceof ZodError) {
+        const issues = err.issues ?? err.errors ?? [];
         return res.status(400).json({
           error: 'Validation Error',
           message: 'Dados de entrada inválidos',
-          details: err.errors.map((e) => ({
+          details: issues.map((e) => ({
             field: e.path.join('.'),
             message: e.message,
           })),
