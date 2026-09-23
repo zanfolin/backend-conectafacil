@@ -13,8 +13,8 @@ export async function up(knex) {
     table.string('code_email_verification', 6).nullable();
     table.timestamp('code_expires_at').nullable();
     table.boolean('active_notification').notNullable().defaultTo(true);
-    table.timestamp('created_at').notNullable().defaultTo(knex.raw("strftime('%Y-%m-%dT%H:%M:%SZ','now')"));
-    table.timestamp('updated_at').notNullable().defaultTo(knex.raw("strftime('%Y-%m-%dT%H:%M:%SZ','now')"));
+    table.timestamp('created_at').notNullable().defaultTo(knex.raw("(strftime('%Y-%m-%dT%H:%M:%SZ','now'))"));
+    table.timestamp('updated_at').notNullable().defaultTo(knex.raw("(strftime('%Y-%m-%dT%H:%M:%SZ','now'))"));
     table.timestamp('deleted_at').nullable();
   });
 

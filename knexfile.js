@@ -1,40 +1,28 @@
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { config } from 'dotenv';
+import { mkdirSync } from 'node:fs';
+import { NodeSqliteClient } from './src/db/dialects/NodeSqliteClient.js';
 
 config(); // Load .env file
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+const databasePath = process.env.DATABASE_PATH || './data/conectafacil.db';
+mkdirSync(path.dirname(databasePath) || '.', { recursive: true });
 
-// Load env config dynamically (knex supports async config functions)
-async function loadConfig() {
-  const { env } = await import('./src/config/env.js');
-  return {
-    client: {
-      resolve: () => import('./src/db/dialects/NodeSqliteClient.js').then((m) => m.NodeSqliteClient),
-    },
-    connection: {
-      filename: env.DATABASE_PATH,
-    },
-    pool: {
-      min: 1,
-      max: 1,
-    },
-    migrations: {
-      directory: './src/db/migrations',
-      tableName: 'knex_migrations',
-      loadExtensions: ['.js'],
-    },
-    seeds: {
-      directory: './src/db/seeds',
-      loadExtensions: ['.js'],
-    },
-    useNullAsDefault: true,
-  };
-}
-
-export default loadConfig;
+export default {
+  client: NodeSqliteClient,
+  connection: {
+    filename: databasePath,
+  },
+  pool: {
+    min: 1,
+    max: 1,
+  },
+  migrations: {
+    directory: './src/db/migrations',
+    tableName: 'knex_migrations',
     loadExtensions: ['.js'],
   },
   seeds: {

@@ -4,8 +4,8 @@ export async function up(knex) {
     table.integer('user_id').notNullable().references('id').inTable('users').onDelete('RESTRICT');
     table.integer('vacancy_id').notNullable().references('id').inTable('vacancies').onDelete('RESTRICT');
     table.enu('status', ['PENDING', 'ACCEPTED', 'REJECTED']).notNullable().defaultTo('PENDING');
-    table.timestamp('created_at').notNullable().defaultTo(knex.raw("strftime('%Y-%m-%dT%H:%M:%SZ','now')"));
-    table.timestamp('updated_at').notNullable().defaultTo(knex.raw("strftime('%Y-%m-%dT%H:%M:%SZ','now')"));
+    table.timestamp('created_at').notNullable().defaultTo(knex.raw("(strftime('%Y-%m-%dT%H:%M:%SZ','now'))"));
+    table.timestamp('updated_at').notNullable().defaultTo(knex.raw("(strftime('%Y-%m-%dT%H:%M:%SZ','now'))"));
 
     // Unique constraint to prevent duplicate applications
     table.unique(['user_id', 'vacancy_id']);

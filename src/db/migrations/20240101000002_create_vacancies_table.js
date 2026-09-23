@@ -14,8 +14,8 @@ export async function up(knex) {
     table.decimal('salary_min', 12, 2).nullable();
     table.decimal('salary_max', 12, 2).nullable();
     table.enu('status', ['OPEN', 'CLOSED']).notNullable().defaultTo('OPEN');
-    table.timestamp('created_at').notNullable().defaultTo(knex.raw("strftime('%Y-%m-%dT%H:%M:%SZ','now')"));
-    table.timestamp('updated_at').notNullable().defaultTo(knex.raw("strftime('%Y-%m-%dT%H:%M:%SZ','now')"));
+    table.timestamp('created_at').notNullable().defaultTo(knex.raw("(strftime('%Y-%m-%dT%H:%M:%SZ','now'))"));
+    table.timestamp('updated_at').notNullable().defaultTo(knex.raw("(strftime('%Y-%m-%dT%H:%M:%SZ','now'))"));
     table.timestamp('deleted_at').nullable();
   });
 

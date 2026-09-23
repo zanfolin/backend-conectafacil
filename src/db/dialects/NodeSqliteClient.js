@@ -1,13 +1,12 @@
 import { DatabaseSync } from 'node:sqlite';
-import { BetterSqlite3Client } from 'knex/lib/dialects/better-sqlite3';
+import Sqlite3Client from 'knex/lib/dialects/sqlite3/index.js';
 
-export class NodeSqliteClient extends BetterSqlite3Client {
-  constructor(config) {
-    super(config);
-    this.driverName = 'node:sqlite';
+export class NodeSqliteClient extends Sqlite3Client {
+  _driver() {
+    return DatabaseSync;
   }
 
-  acquireRawConnection() {
+  async acquireRawConnection() {
     const { filename } = this.connectionSettings;
     const db = new DatabaseSync(filename, {
       enableForeignKeyConstraints: true,
@@ -17,32 +16,36 @@ export class NodeSqliteClient extends BetterSqlite3Client {
     return db;
   }
 
-  destroyRawConnection(connection) {
+  async destroyRawConnection(connection) {
     connection.close();
   }
 
-  _query(connection, obj) {
+  async _query(connection, obj) {
+    if (!obj.sql) throw new Error('The query is empty');
+
     const { sql, bindings } = obj;
     const formattedBindings = this._formatBindings(bindings);
     const stmt = connection.prepare(sql);
 
-    // Detect if it's a SELECT query (reader) by checking SQL
-    const isSelect = /^\s*(SELECT|WITH|PRAGMA)\b/i.test(sql);
+    const isReader = obj.returning || /^\s*(SELECT|WITH|PRAGMA)\b/i.test(sql);
 
-    if (isSelect) {
+    if (isReader) {
       const rows = stmt.all(...formattedBindings);
       obj.response = rows;
     } else {
       const result = stmt.run(...formattedBindings);
-      obj.response = {
-        insertId: result.lastInsertRowid,
+      obj.response = result;
+      obj.context = {
+        lastID: result.lastInsertRowid,
         changes: result.changes,
       };
     }
+
+    return obj;
   }
 
   _formatBindings(bindings) {
-    if (!Array.isArray(bindings)) return bindings;
+    if (!Array.isArray(bindings)) return [];
     return bindings.map((b) => {
       if (typeof b === 'boolean') return b ? 1 : 0;
       if (b instanceof Date) return b.toISOString();
@@ -59,3 +62,8 @@ export class NodeSqliteClient extends BetterSqlite3Client {
     }
   }
 }
+
+Object.assign(NodeSqliteClient.prototype, {
+  dialect: 'sqlite3',
+  driverName: 'node:sqlite',
+});

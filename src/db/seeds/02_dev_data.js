@@ -9,8 +9,19 @@ export async function seed(knex) {
 
   const passwordHash = await bcrypt.hash('Senha123!', 12);
 
+  const devUsers = await knex('users')
+    .whereIn('email', ['recruiter@test.com', 'candidate@test.com'])
+    .select('id');
+  const devUserIds = devUsers.map(({ id }) => id);
+
+  if (devUserIds.length > 0) {
+    await knex('interests').whereIn('user_id', devUserIds).delete();
+    await knex('vacancies').whereIn('user_id', devUserIds).delete();
+    await knex('users').whereIn('id', devUserIds).delete();
+  }
+
   // Recruiter with valid CNPJ: 11.222.333/0001-81
-  const [recruiterId] = await knex('users').insert({
+  const [{ id: recruiterId }] = await knex('users').insert({
     email: 'recruiter@test.com',
     password_hash: passwordHash,
     full_name: 'Recrutador Teste',
@@ -29,7 +40,7 @@ export async function seed(knex) {
   }).returning('id');
 
   // Candidate with valid CPF: 529.982.247-25
-  const [candidateId] = await knex('users').insert({
+  const [{ id: candidateId }] = await knex('users').insert({
     email: 'candidate@test.com',
     password_hash: passwordHash,
     full_name: 'Candidato Teste',
@@ -48,7 +59,7 @@ export async function seed(knex) {
   }).returning('id');
 
   // Create sample vacancies
-  const [vacancy1Id] = await knex('vacancies').insert({
+  const [{ id: vacancy1Id }] = await knex('vacancies').insert({
     user_id: recruiterId,
     job_title: 'Desenvolvedor Full Stack',
     company_name: 'TechCorp',
@@ -67,7 +78,7 @@ export async function seed(knex) {
     deleted_at: null,
   }).returning('id');
 
-  const [vacancy2Id] = await knex('vacancies').insert({
+  const [{ id: vacancy2Id }] = await knex('vacancies').insert({
     user_id: recruiterId,
     job_title: 'Desenvolvedor Frontend',
     company_name: 'StartupXYZ',
