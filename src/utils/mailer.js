@@ -16,6 +16,10 @@ function createTransporter() {
     });
   }
 
+  if (env.NODE_ENV === 'production') {
+    throw new Error('SMTP não configurado para produção');
+  }
+
   // Development fallback: log emails to console
   return {
     sendMail: async (mailOptions) => {

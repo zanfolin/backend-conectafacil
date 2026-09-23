@@ -12,6 +12,7 @@
     "migrate:make": "knex migrate:make --knexfile knexfile.js",
     "seed": "knex seed:run --knexfile knexfile.js",
     "seed:make": "knex seed:make --knexfile knexfile.js",
+    "test": "node --test test/**/*.test.js",
     "test:smoke": "node scripts/smoke-test.js"
   },
   "dependencies": {
